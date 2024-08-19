@@ -1,0 +1,121 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+
+lobster_abundance <- read_csv(here("data", "Lobster_Abundance_All_Years_20210412.csv"), na = c("", "-99999")) |>
+  clean_names() |>
+  uncount(count)
+
+#what did uncount do? It separates out the "count", changing how the data is combined. 
+```
+
+```{r}
+rm(list = ls())
+
+#summarize and find the means
+
+lobster_abundance_summary <- lobster_abundance |>
+  group_by(site, year) |>
+  summarize(total_count = n(),
+            mean_carapace_len = mean(size_mm, na.rm = TRUE))
+
+#make a ggplot of this summary
+ggplot(data = lobster_abundance_summary, aes(x = year, y = total_count, colour = site)) +
+       geom_point() + 
+        geom_line() +
+       theme_minimal() +
+       facet_wrap(~ site) +
+  labs(x = "Year", y = "Total Count", title = "Lobster Count per Year")
+  
+```
+
+```{r}
+#create a subset that only contains lobster data from 2020
+#create a new column that indicates if the lobster is legal or not
+lobster_abundance2020 <- lobster_abundance |>
+  filter(year == 2020) |>
+  mutate (legal = case_when(
+    size_mm > 79.76 ~ FALSE,
+    size_mm < 79.76 ~ TRUE)) |>
+      group_by(legal, site) |>
+  summarise(count=n())
+
+#create a stack column graph showing percentage of legal and non legal lobsters
+
+
+ggplot(data = lobster_abundance2020, aes(x = site, y = count, fill = legal)) +
+  geom_col(position = "fill") +
+  theme_minimal()
+
+#MOHK and CARP have the highest percentage of legal fish
+
+```
+
+```{r}
+#filter() practice
+
+ex_a <- lobster_abundance |>
+  filter(site %in% c("IVEE", "CARP", "NAPL"))
+
+ex_b <- lobster_abundance |>
+  filter(month == 8)
+
+ex_c <- lobster_abundance |>
+  filter(site == "AQUE" | size_mm > 70)
+
+ex_d <- lobster_abundance |>
+  filter(site != "NAPL")
+```
+
+```{r}
+#group_by() |> summarize() practice
+
+ex_e <- lobster_abundance |>
+  group_by(site) |>
+  summarize(mean_size_mm = mean(size_mm, na.rm = TRUE),
+            sd_size_mm = sd(size_mm, na.rm = TRUE))
+
+ex_f <- lobster_abundance |>
+  group_by(site, month) |>
+  summarise(max_carapace = max(size_mm, na.rm = TRUE))
+
+```
+
+```{r}
+#mutate practice
+
+ex_g <- lobster_abundance |>
+  mutate(carapace_cm = size_mm/10)
+
+ex_h <- lobster_abundance |>
+  mutate(site = tolower(site))
+
+ex_i <- lobster_abundance |>
+  mutate(area = as.character(area))
+#class("area")
+```
+
+```{r}
+#case when practice
+ex_j <- lobster_abundance |>
+  mutate(size_bin = case_when(
+    size_mm <= 70 ~ "small",
+    size_mm > 70 ~ "large"))
+
+ex_k <- lobster_abundance |>
+  mutate(designation = case_when(
+    site %in% c("IVEE", "NAPL") ~ "MPA",
+    TRUE ~ "not MPA"))
+  
+```
+
+
+
